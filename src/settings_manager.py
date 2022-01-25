@@ -19,7 +19,11 @@ class SettingsManager:
             'CLIENT_BASE_URL',
             'API_SECRET_AUTH_KEY',
             'SENDER_EMAIL_ADDRESS',
-            'SENDGRID_API_KEY'
+            'SENDGRID_API_KEY',
+            'MARIADB_USER',
+            'MARIADB_PASSWORD',
+            'MARIADB_DATABASE',
+            'MARIADB_SERVER'
         ]
 
         for key in keys:

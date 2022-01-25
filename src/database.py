@@ -3,10 +3,16 @@ from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from sqlalchemy.ext.hybrid import hybrid_property
 from logging import getLogger
 
+from .settings_manager import settingsManager
+
 Base = declarative_base()
 
 log = getLogger(__name__)
-engine = create_engine("mariadb+mariadbconnector://pooper:pooper@127.0.0.1/pooper")
+engine = create_engine(f"mariadb+mariadbconnector://"
+                       f"{settingsManager.get_setting('MARIADB_USER')}:"
+                       f"{settingsManager.get_setting('MARIADB_PASSWORD')}@"
+                       f"{settingsManager.get_setting('MARIADB_SERVER')}/"
+                       f"{settingsManager.get_setting('MARIADB_DATABASE')}")
 SessionLocal = sessionmaker(bind=engine)
 
 
