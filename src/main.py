@@ -5,8 +5,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .logging_config import logging_config
-from .database import create_db_and_tables
+from .database import create_db_and_tables, seed_users
 from .routers import animals, auth, events, users
+from .settings_manager import settingsManager
 
 logging.config.dictConfig(logging_config)
 log = getLogger(__name__)
@@ -22,7 +23,9 @@ app = FastAPI(
     }
 )
 
-origins = ["http://localhost:8080"]
+origins = [
+    settingsManager.get_setting('CLIENT_BASE_URL')
+]
 
 app.add_middleware(
     CORSMiddleware,
@@ -41,3 +44,4 @@ app.include_router(users.router)
 @app.on_event("startup")
 def on_startup():
     create_db_and_tables()
+    seed_users()

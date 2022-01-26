@@ -1,8 +1,11 @@
+from datetime import datetime
+
 from sqlalchemy import Boolean, create_engine, Column, DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from sqlalchemy.ext.hybrid import hybrid_property
 from logging import getLogger
 
+from .auth import pwd_context, ALGORITHM
 from .settings_manager import settingsManager
 
 Base = declarative_base()
@@ -86,3 +89,29 @@ def get_database_session():
         yield session
     finally:
         session.close()
+
+
+def seed_users():
+    log.info("Seeding users")
+    email_address = "admin@pooper.online"
+    session = SessionLocal()
+
+    user = session.query(User).where(User.email_address == email_address).first()
+    if user is not None:
+        return
+
+    log.info(f"Creating user with username {email_address}")
+
+    user = User(
+        first_name="Admin",
+        last_name="Admin",
+        email_address=email_address,
+        password_hash=pwd_context.hash("admin"),
+        is_disabled=False,
+        created=datetime.now(),
+        updated=datetime.now()
+    )
+
+    session.add(user)
+    session.commit()
+    session.close()
