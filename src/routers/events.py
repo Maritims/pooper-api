@@ -32,8 +32,15 @@ def get_event(_id: int, session: Session = Depends(get_database_session)):
 
 
 @router.get("/", response_model=List[EventRead])
-def get_all(page: int = 0, page_size: int = 100, session: Session = Depends(get_database_session)):
-    return session.query(Event).offset(page).limit(page_size).all()
+def get_all(page: int = 0, page_size: int = 100, sort_order: str = "desc", session: Session = Depends(get_database_session)):
+    statement = session.query(Event)
+
+    if sort_order == "asc":
+        statement = statement.order_by(Event.id.asc())
+    else:
+        statement = statement.order_by(Event.id.desc())
+
+    return statement.offset(page).limit(page_size).all()
 
 
 @router.post("/", response_model=EventRead, status_code=status.HTTP_201_CREATED)

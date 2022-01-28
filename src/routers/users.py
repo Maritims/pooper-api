@@ -1,17 +1,43 @@
 from datetime import datetime
 from typing import List
 
+import jwt
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
 
-from ..auth import pwd_context
+from ..auth import pwd_context, oauth2_scheme, ALGORITHM
 from ..database import get_database_session, User
 from ..models.user import UserRead, UserCreate
+from ..settings_manager import settingsManager
 
 router = APIRouter(
     prefix="/users",
     tags=["users"]
 )
+
+
+def get_current_user(session: Session, token: str):
+    payload = jwt.decode(token, settingsManager.get_setting('API_SECRET_AUTH_KEY'), algorithms=ALGORITHM)
+    email_address: str = payload.get("sub")
+
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid credentials"
+    )
+
+    if email_address is None:
+        raise credentials_exception
+
+    user = session.query(User).where(User.email_address == email_address).first()
+    if user is None:
+        raise credentials_exception
+
+    return user
+
+
+@router.get("/me", response_model=UserRead)
+def get_me(session: Session = Depends(get_database_session), token: str = Depends(oauth2_scheme)):
+    return get_current_user(session, token)
 
 
 @router.get("/", response_model=List[UserRead])
@@ -36,6 +62,28 @@ def create(user: UserCreate, session: Session = Depends(get_database_session)):
         created=datetime.now(),
         updated=datetime.now()
     )
+
+    session.add(db_user)
+    session.commit()
+    session.refresh(db_user)
+
+    return db_user
+
+
+@router.patch("/update", response_model=UserRead)
+def update(user: UserCreate, session: Session = Depends(get_database_session), token: str = Depends(oauth2_scheme)):
+    if user.password != user.password_repeated:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Passwords must match"
+        )
+
+    db_user: User = get_current_user(session, token)
+    db_user.email_address = user.email_address
+    db_user.first_name = user.first_name
+    db_user.last_name = user.last_name
+    db_user.password_hash = pwd_context.hash(user.password)
+    db_user.updated = datetime.now()
 
     session.add(db_user)
     session.commit()
