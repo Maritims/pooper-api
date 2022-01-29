@@ -1,11 +1,11 @@
 from datetime import datetime
-
-from sqlalchemy import Boolean, create_engine, Column, DateTime, Float, ForeignKey, Integer, String
-from sqlalchemy.orm import declarative_base, relationship, sessionmaker
-from sqlalchemy.ext.hybrid import hybrid_property
 from logging import getLogger
 
-from .auth import pwd_context, ALGORITHM
+from sqlalchemy import Boolean, create_engine, Column, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import declarative_base, relationship, sessionmaker
+
+from .auth import pwd_context
 from .settings_manager import settingsManager
 
 Base = declarative_base()
@@ -60,27 +60,8 @@ class User(Base):
     updated = Column(DateTime, nullable=False)
 
 
-def create_db_and_tables(total_attempts: int = 0) -> bool:
-    max_attempts = 10
-    log.info("Attempting to create database and tables")
-
-    if total_attempts == max_attempts:
-        log.error("Giving up")
-        return False
-
-    seconds_between_attempts = 5
-
-    try:
-        Base.metadata.create_all(engine)
-        return True
-    except Exception as err:
-        log.error("Unable to create database and tables. An exception occurred: {0}. Trying again in {1} seconds".format(
-            err,
-            seconds_between_attempts
-        ))
-
-    total_attempts += 1
-    return create_db_and_tables(total_attempts)
+def create_db_and_tables():
+    Base.metadata.create_all(engine)
 
 
 def get_database_session():
