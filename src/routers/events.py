@@ -40,7 +40,7 @@ def get_all(page: int = 0, page_size: int = 100, sort_order: str = "desc", sessi
     else:
         statement = statement.order_by(Event.id.desc())
 
-    return statement.offset(page).limit(page_size).all()
+    return statement.limit(page_size).offset(page * page_size).all()
 
 
 @router.post("/", response_model=EventRead, status_code=status.HTTP_201_CREATED)
