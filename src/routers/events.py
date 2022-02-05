@@ -1,13 +1,14 @@
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, status, HTTPException, Depends
-from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy import func, text
+from sqlalchemy.orm import Session, Query
 
 from ..auth import oauth2_scheme
 from ..database import get_database_session, Event
 from ..models.event import EventRead, EventCreate
+from ..models.event_type import EventType
 
 router = APIRouter(
     prefix="/events",
@@ -16,9 +17,32 @@ router = APIRouter(
 )
 
 
+def get_statement(
+        session: Session,
+        animal_id: Optional[int] = None,
+        event_type: Optional[EventType] = None,
+        days: Optional[int] = None) -> Query:
+    statement: Query = session.query(Event)
+
+    if animal_id is not None and animal_id > 0:
+        statement = statement.where(Event.animal_id == animal_id)
+
+    if EventType.has_value(event_type):
+        statement = statement.where(Event.event_type == event_type)
+
+    if days is not None:
+        statement = statement.where(func.datediff(datetime.now(), Event.created) <= days)
+
+    return statement
+
+
 @router.get("/count", response_model=int)
-def get_count(session: Session = Depends(get_database_session)):
-    return session.query(func.count(Event.id)).scalar()
+def get_count(
+        animal_id: Optional[int] = None,
+        event_type: Optional[EventType] = None,
+        days: Optional[int] = None,
+        session: Session = Depends(get_database_session)):
+    return get_statement(session, animal_id, event_type, days).count()
 
 
 @router.get("/{_id}", response_model=EventRead)
@@ -32,8 +56,15 @@ def get_event(_id: int, session: Session = Depends(get_database_session)):
 
 
 @router.get("/", response_model=List[EventRead])
-def get_all(page: int = 0, page_size: int = 100, sort_order: str = "desc", session: Session = Depends(get_database_session)):
-    statement = session.query(Event)
+def get_all(
+        animal_id: Optional[int] = None,
+        event_type: Optional[EventType] = None,
+        days: Optional[int] = None,
+        page: int = 0,
+        page_size: int = 100,
+        sort_order: str = "desc",
+        session: Session = Depends(get_database_session)):
+    statement: Query = get_statement(session, animal_id, event_type, days)
 
     if sort_order == "asc":
         statement = statement.order_by(Event.id.asc())
