@@ -40,10 +40,39 @@ class Event(Base):
     created = Column(DateTime, nullable=False)
     updated = Column(DateTime, nullable=False)
     animal = relationship("Animal", back_populates="events")
+    rating = Column(Integer)
 
     @hybrid_property
     def animal_name(self):
         return self.animal.name
+
+
+class Notification(Base):
+    __tablename__ = 'notification'
+
+    id = Column(Integer, primary_key=True)
+    title = Column(String(256), nullable=False)
+    message = Column(String(256), nullable=False)
+    created = Column(DateTime, nullable=False)
+    created_by_user_id = Column(Integer, ForeignKey('user.id'))
+    created_by_user = relationship("User")
+
+    @hybrid_property
+    def created_by_user_name(self):
+        return self.created_by_user.name
+
+
+class NotificationSubscription(Base):
+    __tablename__ = 'notification_subscription'
+
+    id = Column(Integer, primary_key=True)
+    endpoint = Column(String(256), nullable=False)
+    public_key = Column(String(256), nullable=False)
+    authentication_secret = Column(String(256), nullable=False)
+    created_by_user_id = Column(Integer, ForeignKey('user.id'))
+    created = Column(DateTime, nullable=False)
+    updated_by_user_id = Column(Integer, ForeignKey('user.id'))
+    updated = Column(DateTime, nullable=False)
 
 
 class User(Base):

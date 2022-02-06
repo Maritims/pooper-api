@@ -23,7 +23,9 @@ class SettingsManager:
             'MARIADB_USER',
             'MARIADB_PASSWORD',
             'MARIADB_DATABASE',
-            'MARIADB_SERVER'
+            'MARIADB_SERVER',
+            #'VAPID_PUBLIC_KEY',
+            #'VAPID_PRIVATE_KEY'
         ]
 
         for key in keys:

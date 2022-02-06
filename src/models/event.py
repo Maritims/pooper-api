@@ -1,4 +1,6 @@
 from datetime import datetime
+from typing import Optional
+
 from pydantic import BaseModel
 from .event_type import EventType
 
@@ -8,6 +10,7 @@ class EventBase(BaseModel):
     longitude: float
     animal_id: int
     event_type: EventType
+    rating: Optional[int]
 
 
 class EventCreate(EventBase):

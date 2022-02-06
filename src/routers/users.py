@@ -1,38 +1,18 @@
 from datetime import datetime
 from typing import List
 
-import jwt
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
 
-from ..auth import pwd_context, oauth2_scheme, ALGORITHM
+from ..auth import pwd_context, oauth2_scheme
 from ..database import get_database_session, User
 from ..models.user import UserRead, UserCreate
-from ..settings_manager import settingsManager
+from ..services.users import get_current_user
 
 router = APIRouter(
     prefix="/users",
     tags=["users"]
 )
-
-
-def get_current_user(session: Session, token: str):
-    payload = jwt.decode(token, settingsManager.get_setting('API_SECRET_AUTH_KEY'), algorithms=ALGORITHM)
-    email_address: str = payload.get("sub")
-
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid credentials"
-    )
-
-    if email_address is None:
-        raise credentials_exception
-
-    user = session.query(User).where(User.email_address == email_address).first()
-    if user is None:
-        raise credentials_exception
-
-    return user
 
 
 @router.get("/me", response_model=UserRead)
