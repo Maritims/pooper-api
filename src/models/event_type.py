@@ -7,6 +7,7 @@ class EventType(str, Enum):
     Poo = 'Poo'
     FishOil = 'Fish oil'
     VitaminB = 'Vitamin B'
+    BrushTeeth = 'Brush teeth'
 
     @staticmethod
     def has_value(item):
