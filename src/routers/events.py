@@ -9,6 +9,8 @@ from ..auth import oauth2_scheme
 from ..database import get_database_session, Event
 from ..models.event import EventRead, EventCreate
 from ..models.event_type import EventType
+from ..services.notifications import send_notification_to_users
+from ..services.users import get_current_user
 
 router = APIRouter(
     prefix="/events",
@@ -75,7 +77,9 @@ def get_all(
 
 
 @router.post("/", response_model=EventRead, status_code=status.HTTP_201_CREATED)
-def create(event: EventCreate, session: Session = Depends(get_database_session)):
+def create(event: EventCreate, session: Session = Depends(get_database_session), token: str = Depends(oauth2_scheme)):
+    current_user = get_current_user(session, token)
+
     db_event = Event(**event.dict())
     db_event.created = datetime.now()
     db_event.updated = datetime.now()
@@ -83,6 +87,12 @@ def create(event: EventCreate, session: Session = Depends(get_database_session))
     session.add(db_event)
     session.commit()
     session.refresh(db_event)
+
+    send_notification_to_users(f"{current_user.first_name} registered a new event",
+                               f"{db_event.event_type} was registered for {db_event.animal_name}.",
+                               [],
+                               session,
+                               token)
 
     return db_event
 

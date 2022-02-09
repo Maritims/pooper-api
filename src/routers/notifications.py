@@ -7,6 +7,7 @@ from src.auth import oauth2_scheme
 from src.database import get_database_session, NotificationSubscription
 from src.models.notification_subscription import NotificationSubscriptionRead, NotificationSubscriptionCreate
 from src.models.user import UserRead
+from src.services.notifications import send_notification_to_subscription
 from src.services.users import get_current_user
 
 router = APIRouter(
@@ -16,15 +17,20 @@ router = APIRouter(
 )
 
 
-@router.post("/subscribe", response_model=NotificationSubscriptionRead)
-def subscribe(subscription: NotificationSubscriptionCreate, session: Session = Depends(get_database_session), token: str = Depends(oauth2_scheme)):
+@router.post("/subscribe", response_model=NotificationSubscriptionRead, status_code=status.HTTP_201_CREATED)
+def subscribe(subscription: NotificationSubscriptionCreate, session: Session = Depends(get_database_session),
+              token: str = Depends(oauth2_scheme)):
     current_user: UserRead = get_current_user(session, token)
 
-    db_subscription = NotificationSubscription(**subscription.dict())
-    db_subscription.created_by_user_id = current_user.id
-    db_subscription.created = datetime.now()
-    db_subscription.updated_by_user_id = current_user.id
-    db_subscription.updated = datetime.now()
+    db_subscription = NotificationSubscription(
+        endpoint=subscription.endpoint,
+        public_key=subscription.public_key,
+        authentication_secret=subscription.authentication_secret,
+        created_by_user_id=current_user.id,
+        created=datetime.now(),
+        updated_by_user_id=current_user.id,
+        updated = datetime.now()
+    )
 
     session.add(db_subscription)
     session.commit()
@@ -34,7 +40,8 @@ def subscribe(subscription: NotificationSubscriptionCreate, session: Session = D
 
 
 @router.put("/subscribe", response_model=NotificationSubscriptionRead)
-def subscribe(subscription: NotificationSubscriptionCreate, session: Session = Depends(get_database_session), token: str = Depends(oauth2_scheme)):
+def subscribe(subscription: NotificationSubscriptionCreate, session: Session = Depends(get_database_session),
+              token: str = Depends(oauth2_scheme)):
     current_user = get_current_user(session, token)
 
     db_subscription: NotificationSubscription = session.query(NotificationSubscription)\
@@ -57,3 +64,11 @@ def subscribe(subscription: NotificationSubscriptionCreate, session: Session = D
     session.refresh(db_subscription)
 
     return db_subscription
+
+
+@router.get("/test")
+def test(session: Session = Depends(get_database_session), token: str = Depends(oauth2_scheme)):
+    current_user = get_current_user(session, token)
+    subscription = session.query(NotificationSubscription)\
+        .where(NotificationSubscription.created_by_user_id == current_user.id).first()
+    send_notification_to_subscription(subscription, "Hello!", "World!")

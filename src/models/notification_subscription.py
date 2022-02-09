@@ -13,3 +13,6 @@ class NotificationSubscriptionCreate(NotificationSubscriptionBase):
 
 class NotificationSubscriptionRead(NotificationSubscriptionBase):
     pass
+
+    class Config:
+        orm_mode = True

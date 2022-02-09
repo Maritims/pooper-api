@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .logging_config import logging_config
 from .database import create_db_and_tables, seed_users
-from .routers import animals, auth, events, users
+from .routers import animals, auth, events, users, notifications
 from .settings_manager import settingsManager
 
 logging.config.dictConfig(logging_config)
@@ -34,6 +34,7 @@ app.add_middleware(
 app.include_router(animals.router)
 app.include_router(auth.router)
 app.include_router(events.router)
+app.include_router(notifications.router)
 app.include_router(users.router)
 
 
