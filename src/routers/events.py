@@ -33,7 +33,10 @@ def get_statement(
         statement = statement.where(Event.event_type == event_type)
 
     if days is not None:
-        statement = statement.where(func.datediff(datetime.now(), Event.created) <= days)
+        if days == 1:
+            statement = statement.where(func.date(Event.created) == func.date(datetime.now()))
+        else:
+            statement = statement.where(func.datediff(datetime.now(), Event.created) <= days)
 
     return statement
 
@@ -90,7 +93,7 @@ def create(event: EventCreate, session: Session = Depends(get_database_session),
 
     send_notification_to_users(f"{current_user.first_name} registered a new event",
                                f"{db_event.event_type} was registered for {db_event.animal_name}.",
-                               [],
+                               [current_user.id],
                                session,
                                token)
 
