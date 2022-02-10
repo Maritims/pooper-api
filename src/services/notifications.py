@@ -62,4 +62,7 @@ def send_notification_to_subscription(
                 "sub": "mailto:no-reply@pooper.online"
             })
     except WebPushException as ex:
-        log.error("Push notification could not be sent", ex)
+        if ex.response.status_code == 410:
+            log.error("Push notification could not be sent. The subscription no longer exists")
+            session.delete(subscription)
+            session.commit()
