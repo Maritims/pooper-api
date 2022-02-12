@@ -84,7 +84,8 @@ def create(event: EventCreate, session: Session = Depends(get_database_session),
     current_user = get_current_user(session, token)
 
     db_event = Event(**event.dict())
-    db_event.created = datetime.now()
+    if db_event.created is None:
+        db_event.created = datetime.now()
     db_event.created_by_user_id = current_user.id
     db_event.updated = datetime.now()
     db_event.updated_by_user_id = current_user.id

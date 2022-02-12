@@ -11,15 +11,15 @@ class EventBase(BaseModel):
     animal_id: int
     event_type: EventType
     rating: Optional[int]
+    created: datetime
 
 
 class EventCreate(EventBase):
-    pass
+    created: Optional[datetime]
 
 
 class EventRead(EventBase):
     id: int
-    created: datetime
     created_by_user_id: int
     created_by_user_name: str
     animal_name: str
