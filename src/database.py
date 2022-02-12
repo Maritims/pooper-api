@@ -38,13 +38,20 @@ class Event(Base):
     event_type = Column(String(256), nullable=False)
     animal_id = Column(Integer, ForeignKey('animal.id'))
     created = Column(DateTime, nullable=False)
+    created_by_user_id = Column(Integer, ForeignKey('user.id'))
     updated = Column(DateTime, nullable=False)
+    updated_by_user_id = Column(Integer)
     animal = relationship("Animal", back_populates="events")
+    created_by_user = relationship("User", back_populates="events")
     rating = Column(Integer)
 
     @hybrid_property
     def animal_name(self):
         return self.animal.name
+
+    @hybrid_property
+    def created_by_user_name(self):
+        return f"{self.created_by_user.first_name} {self.created_by_user.last_name}"
 
 
 class Notification(Base):
@@ -87,6 +94,7 @@ class User(Base):
     is_disabled = Column(Boolean, nullable=False)
     created = Column(DateTime, nullable=False)
     updated = Column(DateTime, nullable=False)
+    events = relationship("Event", back_populates="created_by_user")
 
 
 def create_db_and_tables():

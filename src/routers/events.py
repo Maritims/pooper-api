@@ -85,7 +85,9 @@ def create(event: EventCreate, session: Session = Depends(get_database_session),
 
     db_event = Event(**event.dict())
     db_event.created = datetime.now()
+    db_event.created_by_user_id = current_user.id
     db_event.updated = datetime.now()
+    db_event.updated_by_user_id = current_user.id
 
     session.add(db_event)
     session.commit()

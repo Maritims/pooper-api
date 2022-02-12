@@ -20,6 +20,8 @@ class EventCreate(EventBase):
 class EventRead(EventBase):
     id: int
     created: datetime
+    created_by_user_id: int
+    created_by_user_name: str
     animal_name: str
 
     class Config:
