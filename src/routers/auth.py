@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timedelta
 from logging import getLogger
 
@@ -9,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from ..auth import pwd_context, ACCESS_TOKEN_EXPIRE_MINUTES, ALGORITHM
 from ..database import get_database_session, User
+from ..models.user import UserRead
 from ..services.email import EmailService
 from ..settings_manager import settingsManager
 
@@ -49,14 +51,17 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = D
         )
 
     if user is None:
+        log.warning(f"Someone attempted to log in with username {email_address} but no user with this username exists.")
         raise credentials_exception
 
     if not pwd_context.verify(form_data.password, user.password_hash):
+        log.warning(f"Someone attempted to log in with username {email_address} but supplied invalid credentials")
         raise credentials_exception
 
     token = jwt.encode({
         "sub": user.email_address,
-        "exp": datetime.utcnow() + timedelta(ACCESS_TOKEN_EXPIRE_MINUTES)
+        "exp": datetime.utcnow() + timedelta(ACCESS_TOKEN_EXPIRE_MINUTES),
+        "user": json.dumps(UserRead(**user.__dict__).__dict__, default=str)
     }, settingsManager.get_setting("API_SECRET_AUTH_KEY"), algorithm=ALGORITHM)
     return LoginResponse(access_token=token)
 

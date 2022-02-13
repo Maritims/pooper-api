@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, status, HTTPException, Depends
-from sqlalchemy import func, text
+from sqlalchemy import func, text, or_
 from sqlalchemy.orm import Session, Query
 
 from ..auth import oauth2_scheme
@@ -23,7 +23,8 @@ def get_statement(
         session: Session,
         animal_id: Optional[int] = None,
         event_type: Optional[EventType] = None,
-        days: Optional[int] = None) -> Query:
+        days: Optional[int] = None,
+        has_trip: Optional[bool] = None) -> Query:
     statement: Query = session.query(Event)
 
     if animal_id is not None and animal_id > 0:
@@ -38,6 +39,11 @@ def get_statement(
         else:
             statement = statement.where(func.datediff(datetime.now(), Event.created) <= days)
 
+    if has_trip is True:
+        statement = statement.filter(or_(Event.trip_id.is_not(None), Event.trip_id > 0))
+    elif has_trip is False:
+        statement = statement.filter(or_(Event.trip_id.is_(None), Event.trip_id == 0))
+
     return statement
 
 
@@ -46,8 +52,9 @@ def get_count(
         animal_id: Optional[int] = None,
         event_type: Optional[EventType] = None,
         days: Optional[int] = None,
+        has_trip: Optional[bool] = None,
         session: Session = Depends(get_database_session)):
-    return get_statement(session, animal_id, event_type, days).count()
+    return get_statement(session, animal_id, event_type, days, has_trip).count()
 
 
 @router.get("/{_id}", response_model=EventRead)
@@ -65,11 +72,12 @@ def get_all(
         animal_id: Optional[int] = None,
         event_type: Optional[EventType] = None,
         days: Optional[int] = None,
+        has_trip: Optional[bool] = None,
         page: int = 0,
         page_size: int = 100,
         sort_order: str = "desc",
         session: Session = Depends(get_database_session)):
-    statement: Query = get_statement(session, animal_id, event_type, days)
+    statement: Query = get_statement(session, animal_id, event_type, days, has_trip)
 
     if sort_order == "asc":
         statement = statement.order_by(Event.id.asc())

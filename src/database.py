@@ -27,6 +27,7 @@ class Animal(Base):
     created = Column(DateTime, nullable=False)
     updated = Column(DateTime, nullable=False)
     events = relationship("Event", back_populates="animal")
+    trips = relationship("Trip", back_populates="animal")
 
 
 class Event(Base):
@@ -44,6 +45,7 @@ class Event(Base):
     animal = relationship("Animal", back_populates="events")
     created_by_user = relationship("User", back_populates="events")
     rating = Column(Integer)
+    trip_id = Column(Integer, nullable=True)
 
     @hybrid_property
     def animal_name(self):
@@ -82,6 +84,25 @@ class NotificationSubscription(Base):
     updated = Column(DateTime, nullable=False)
 
 
+class Trip(Base):
+    __tablename__ = 'trip'
+
+    id = Column(Integer, primary_key=True)
+    created_by_user_id = Column(Integer, ForeignKey('user.id'))
+    created_by_user = relationship("User")
+    created_date = Column(DateTime, nullable=False)
+    animal_id = Column(Integer, ForeignKey('animal.id'))
+    animal = relationship("Animal")
+
+    @hybrid_property
+    def animal_name(self):
+        return self.animal.name
+
+    @hybrid_property
+    def created_by_user_name(self):
+        return f"{self.created_by_user.first_name} {self.created_by_user.last_name}"
+
+
 class User(Base):
     __tablename__ = 'user'
 
@@ -95,6 +116,9 @@ class User(Base):
     created = Column(DateTime, nullable=False)
     updated = Column(DateTime, nullable=False)
     events = relationship("Event", back_populates="created_by_user")
+    trips = relationship("Trip", back_populates="created_by_user")
+    home_longitude = Column(Float, nullable=False)
+    home_latitude = Column(Float, nullable=False)
 
 
 def create_db_and_tables():

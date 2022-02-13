@@ -23,6 +23,7 @@ class EventRead(EventBase):
     created_by_user_id: int
     created_by_user_name: str
     animal_name: str
+    trip_id: int
 
     class Config:
         orm_mode = True

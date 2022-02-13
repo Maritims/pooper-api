@@ -62,8 +62,12 @@ def update(user: UserCreate, session: Session = Depends(get_database_session), t
     db_user.email_address = user.email_address
     db_user.first_name = user.first_name
     db_user.last_name = user.last_name
-    db_user.password_hash = pwd_context.hash(user.password)
+    db_user.home_longitude = user.home_longitude
+    db_user.home_latitude = user.home_latitude
     db_user.updated = datetime.now()
+
+    if user.password is not None:
+        db_user.password_hash = pwd_context.hash(user.password)
 
     session.add(db_user)
     session.commit()

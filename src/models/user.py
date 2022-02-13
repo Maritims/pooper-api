@@ -6,6 +6,8 @@ class UserBase(BaseModel):
     first_name: str
     last_name: str
     email_address: str
+    home_longitude: float
+    home_latitude: float
 
 
 class UserCreate(UserBase):
