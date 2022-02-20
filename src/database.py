@@ -27,7 +27,6 @@ class Animal(Base):
     created = Column(DateTime, nullable=False)
     updated = Column(DateTime, nullable=False)
     events = relationship("Event", back_populates="animal")
-    trips = relationship("Trip", back_populates="animal")
 
 
 class Event(Base):
@@ -91,12 +90,6 @@ class Trip(Base):
     created_by_user_id = Column(Integer, ForeignKey('user.id'))
     created_by_user = relationship("User")
     created_date = Column(DateTime, nullable=False)
-    animal_id = Column(Integer, ForeignKey('animal.id'))
-    animal = relationship("Animal")
-
-    @hybrid_property
-    def animal_name(self):
-        return self.animal.name
 
     @hybrid_property
     def created_by_user_name(self):
@@ -117,8 +110,8 @@ class User(Base):
     updated = Column(DateTime, nullable=False)
     events = relationship("Event", back_populates="created_by_user")
     trips = relationship("Trip", back_populates="created_by_user")
-    home_longitude = Column(Float, nullable=False)
-    home_latitude = Column(Float, nullable=False)
+    home_longitude = Column(Float, nullable=True)
+    home_latitude = Column(Float, nullable=True)
 
 
 def create_db_and_tables():

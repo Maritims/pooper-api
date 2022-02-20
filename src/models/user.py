@@ -1,4 +1,6 @@
 from datetime import datetime
+from typing import Optional
+
 from pydantic import BaseModel
 
 
@@ -6,8 +8,8 @@ class UserBase(BaseModel):
     first_name: str
     last_name: str
     email_address: str
-    home_longitude: float
-    home_latitude: float
+    home_longitude: Optional[float]
+    home_latitude: Optional[float]
 
 
 class UserCreate(UserBase):

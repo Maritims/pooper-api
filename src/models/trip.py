@@ -2,11 +2,9 @@ from typing import List
 
 from pydantic import BaseModel
 
-from src.models.event import EventRead
-
 
 class TripBase(BaseModel):
-    animal_id: int
+    pass
 
 
 class TripCreate(TripBase):
@@ -14,4 +12,8 @@ class TripCreate(TripBase):
 
 
 class TripRead(TripBase):
-    events: List[EventRead]
+    id: int
+    created_by_user_id: int
+
+    class Config:
+        orm_mode = True

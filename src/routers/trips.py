@@ -28,19 +28,20 @@ def create(trip: TripCreate, session: Session = Depends(get_database_session), t
 
     db_trip = Trip(
         created_by_user_id=current_user.id,
-        created_date=datetime.now(),
-        animal_id=trip.animal_id
+        created_date=datetime.now()
     )
 
     session.add(db_trip)
     session.commit()
+    session.refresh(db_trip)
 
     for event_id in trip.event_ids:
-        db_event = session.query(Event.id == event_id)
+        db_event = session.query(Event).where(Event.id == event_id).first()
         db_event.trip_id = db_trip.id
+        db_event.updated = datetime.now()
+        db_event.updated_by_user_id = current_user.id
         session.add(db_event)
 
     session.commit()
-    session.refresh(db_trip)
 
     return db_trip
