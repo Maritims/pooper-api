@@ -1,11 +1,12 @@
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
 from .event import EventRead
 
 
 class AnimalBase(BaseModel):
     name: str
+    is_deactivated: Optional[bool]
 
 
 class AnimalCreate(AnimalBase):

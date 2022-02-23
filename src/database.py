@@ -25,8 +25,11 @@ class Animal(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(256), nullable=False)
     created = Column(DateTime, nullable=False)
+    created_by_user_id = Column(Integer, nullable=False)
     updated = Column(DateTime, nullable=False)
+    updated_by_user_id = Column(DateTime, nullable=False)
     events = relationship("Event", back_populates="animal")
+    is_deactivated = Column(Boolean, nullable=False)
 
 
 class Event(Base):
@@ -112,6 +115,7 @@ class User(Base):
     trips = relationship("Trip", back_populates="created_by_user")
     home_longitude = Column(Float, nullable=True)
     home_latitude = Column(Float, nullable=True)
+    color_theme = Column(String(256), nullable=True)
 
 
 def create_db_and_tables():

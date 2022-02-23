@@ -2,11 +2,11 @@ from datetime import datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, status, HTTPException, Depends
-from sqlalchemy import func, text, or_
+from sqlalchemy import func, text, or_, and_
 from sqlalchemy.orm import Session, Query
 
 from ..auth import oauth2_scheme
-from ..database import get_database_session, Event
+from ..database import get_database_session, Event, Animal
 from ..models.event import EventRead, EventCreate
 from ..models.event_type import EventType
 from ..services.notifications import send_notification_to_users
@@ -25,7 +25,7 @@ def get_statement(
         event_type: Optional[EventType] = None,
         days: Optional[int] = None,
         has_trip: Optional[bool] = None) -> Query:
-    statement: Query = session.query(Event)
+    statement: Query = session.query(Event).filter(Event.animal.has(Animal.is_deactivated.is_not(True)))
 
     if animal_id is not None and animal_id > 0:
         statement = statement.where(Event.animal_id == animal_id)

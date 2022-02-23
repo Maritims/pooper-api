@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from ..auth import pwd_context, oauth2_scheme
 from ..database import get_database_session, User
+from ..models.color_theme import ColorTheme
 from ..models.user import UserRead, UserCreate
 from ..services.users import get_current_user
 
@@ -88,3 +89,16 @@ def delete(_id, session: Session = Depends(get_database_session)):
 
     session.delete(user)
     session.commit()
+
+
+@router.patch("/theme/{theme}", response_model=ColorTheme)
+def set_theme(theme: ColorTheme, session: Session = Depends(get_database_session), token: str = Depends(oauth2_scheme)):
+    db_user: User = get_current_user(session, token)
+    db_user.color_theme = theme
+
+    session.add(db_user)
+    session.commit()
+    session.refresh(db_user)
+
+    return db_user.color_theme
+
