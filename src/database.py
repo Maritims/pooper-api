@@ -29,6 +29,7 @@ class Animal(Base):
     updated = Column(DateTime, nullable=False)
     updated_by_user_id = Column(DateTime, nullable=False)
     events = relationship("Event", back_populates="animal")
+    notes = relationship("Note", back_populates="animal", order_by="desc(Note.created)")
     is_deactivated = Column(Boolean, nullable=False)
 
 
@@ -56,6 +57,29 @@ class Event(Base):
     @hybrid_property
     def created_by_user_name(self):
         return f"{self.created_by_user.first_name} {self.created_by_user.last_name}"
+
+
+class Note(Base):
+    __tablename__ = 'note'
+
+    id = Column(Integer, primary_key=True)
+    text = Column(String(256), nullable=False)
+    animal_id = Column(Integer, ForeignKey('animal.id'))
+    created = Column(DateTime, nullable=False)
+    created_by_user_id = Column(Integer, ForeignKey('user.id'))
+    created_by_user = relationship("User", viewonly=True)
+    updated = Column(DateTime, nullable=False)
+    updated_by_user_id = Column(Integer)
+    updated_by_user = relationship("User", viewonly=True)
+    animal = relationship("Animal", back_populates="notes")
+
+    @hybrid_property
+    def created_by_user_name(self):
+        return f"{self.created_by_user.first_name} {self.created_by_user.last_name}"
+
+    @hybrid_property
+    def updated_by_user_name(self):
+        return f"{self.updated_by_user.first_name} {self.updated_by_user.last_name}"
 
 
 class Notification(Base):
