@@ -30,7 +30,20 @@ class Animal(Base):
     updated_by_user_id = Column(DateTime, nullable=False)
     events = relationship("Event", back_populates="animal")
     notes = relationship("Note", back_populates="animal", order_by="desc(Note.created)")
+    tracked_event_types = relationship("AnimalEventTypeAssociation")
     is_deactivated = Column(Boolean, nullable=False)
+
+
+class AnimalEventTypeAssociation(Base):
+    __tablename__ = 'animal_event_type_association'
+
+    id = Column(Integer, primary_key=True)
+    animal_id = Column(Integer, ForeignKey('animal.id', ondelete='cascade'))
+    event_type = Column(String(256), nullable=False)
+    created = Column(DateTime, nullable=False)
+    created_by_user_id = Column(Integer, ForeignKey("user.id"))
+    updated = Column(DateTime, nullable=False)
+    updated_by_user_id = Column(Integer, ForeignKey("user.id"))
 
 
 class Event(Base):

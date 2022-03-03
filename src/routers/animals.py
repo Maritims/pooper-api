@@ -7,8 +7,9 @@ from sqlalchemy.orm import Query
 from sqlmodel import Session
 
 from ..auth import oauth2_scheme
-from ..database import get_database_session, Animal, Note
+from ..database import get_database_session, Animal, Note, AnimalEventTypeAssociation
 from ..models.animal import AnimalRead, AnimalCreate
+from ..models.event_type import EventType
 from ..models.note import NoteCreate, NoteRead
 from ..services.users import get_current_user
 
@@ -55,11 +56,23 @@ def get_by_id(_id, session: Session = Depends(get_database_session)):
 @router.post("/", response_model=AnimalRead, status_code=status.HTTP_201_CREATED)
 def create(animal: AnimalCreate, session: Session = Depends(get_database_session), token: str = Depends(oauth2_scheme)):
     user = get_current_user(session, token)
-    db_animal = Animal(**animal.dict())
+
+    db_animal = Animal()
+    db_animal.name = animal.name
+    db_animal.is_deactivated = animal.is_deactivated
     db_animal.created = datetime.datetime.now()
     db_animal.created_by_user_id = user.id
     db_animal.updated = datetime.datetime.now()
     db_animal.updated_by_user_id = user.id
+
+    for tracked_event_type in animal.event_types_to_track:
+        db_association = AnimalEventTypeAssociation()
+        db_association.created = datetime.datetime.now()
+        db_association.created_by_user_id = user.id
+        db_association.updated = datetime.datetime.now()
+        db_association.updated_by_user_id = user.id
+        db_association.event_type = tracked_event_type
+        db_animal.tracked_event_types.append(db_association)
 
     session.add(db_animal)
     session.commit()
@@ -85,9 +98,33 @@ def update(
         )
 
     db_animal.name = animal.name
-    db_animal.is_deactivated = animal.is_deactivated
+    if animal.is_deactivated is None:
+        db_animal.is_deactivated = False
+    else:
+        db_animal.is_deactivated = animal.is_deactivated
     db_animal.updated = datetime.datetime.now()
     db_animal.updated_by_user_id = user.id
+
+    # Add untracked event types
+    for event_type in animal.event_types_to_track:
+        is_untracked = True
+        for tracked_event_type in db_animal.tracked_event_types:
+            if EventType(tracked_event_type.event_type) == event_type:
+                is_untracked = False
+
+        if is_untracked is True:
+            db_animal.tracked_event_types.append(AnimalEventTypeAssociation(
+                event_type=event_type,
+                created=datetime.datetime.now(),
+                created_by_user_id=user.id,
+                updated=datetime.datetime.now(),
+                updated_by_user_id=user.id
+            ))
+
+    # Remove event types which are no longer tracked
+    for db_association in db_animal.tracked_event_types:
+        if EventType(db_association.event_type) not in animal.event_types_to_track:
+            session.delete(db_association)
 
     session.add(db_animal)
     session.commit()
