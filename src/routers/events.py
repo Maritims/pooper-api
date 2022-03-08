@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, status, HTTPException, Depends
-from sqlalchemy import func, text, or_, and_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, Query
 
 from ..auth import oauth2_scheme

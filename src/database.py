@@ -1,9 +1,9 @@
 from datetime import datetime
 from logging import getLogger
 
-from sqlalchemy import Boolean, create_engine, Column, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import Boolean, create_engine, Column, DateTime, Float, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import declarative_base, relationship, sessionmaker
+from sqlalchemy.orm import declarative_base, relationship, sessionmaker, declared_attr
 
 from .auth import pwd_context
 from .settings_manager import settingsManager
@@ -19,6 +19,18 @@ engine = create_engine(f"mariadb+mariadbconnector://"
 SessionLocal = sessionmaker(bind=engine)
 
 
+class BaseMixin(object):
+    @declared_attr
+    def __tablename__(self):
+        return self.__name__.lower()
+
+    id = Column(Integer, primary_key=True)
+    created = Column(DateTime, nullable=False)
+    created_by_user_id = Column(Integer, nullable=False)
+    updated = Column(DateTime, nullable=False)
+    updated_by_user_id = Column(Integer, nullable=False)
+
+
 class Animal(Base):
     __tablename__ = 'animal'
 
@@ -28,8 +40,21 @@ class Animal(Base):
     created_by_user_id = Column(Integer, nullable=False)
     updated = Column(DateTime, nullable=False)
     updated_by_user_id = Column(DateTime, nullable=False)
-    events = relationship("Event", back_populates="animal")
+    tracked_conditions = relationship(
+        "Condition",
+        primaryjoin="and_(Animal.id == Condition.animal_id,"
+                    " Animal.id == AnimalConditionTypeAssociation.animal_id,"
+                    " Condition.condition_type == AnimalConditionTypeAssociation.condition_type)"
+    )
+    tracked_events = relationship(
+        "Event",
+        back_populates="animal",
+        primaryjoin="and_(Animal.id == Event.animal_id,"
+                    " Animal.id == AnimalEventTypeAssociation.animal_id,"
+                    " Event.event_type == AnimalEventTypeAssociation.event_type)"
+    )
     notes = relationship("Note", back_populates="animal", order_by="desc(Note.created)")
+    tracked_condition_types = relationship("AnimalConditionTypeAssociation")
     tracked_event_types = relationship("AnimalEventTypeAssociation")
     is_deactivated = Column(Boolean, nullable=False)
 
@@ -46,6 +71,27 @@ class AnimalEventTypeAssociation(Base):
     updated_by_user_id = Column(Integer, ForeignKey("user.id"))
 
 
+class AnimalConditionTypeAssociation(Base):
+    __tablename__ = 'animal_condition_association'
+
+    id = Column(Integer, primary_key=True)
+    animal_id = Column(Integer, ForeignKey('animal.id', ondelete='cascade'))
+    condition_type = Column(String(256), nullable=False)
+    created = Column(DateTime, nullable=False)
+    created_by_user_id = Column(Integer, ForeignKey('user.id'))
+    updated = Column(DateTime, nullable=False)
+    updated_by_user_id = Column(Integer, ForeignKey('user.id'))
+
+
+class Condition(BaseMixin, Base):
+    __table_args__ = (UniqueConstraint('animal_id', 'condition_type'),)
+
+    animal_id = Column(Integer, ForeignKey('animal.id', ondelete='cascade'))
+    animal = relationship("Animal", back_populates="tracked_conditions")
+    condition_type = Column(String(256), nullable=False)
+    is_enabled = Column(Boolean, nullable=False)
+
+
 class Event(Base):
     __tablename__ = 'event'
 
@@ -58,7 +104,14 @@ class Event(Base):
     created_by_user_id = Column(Integer, ForeignKey('user.id'))
     updated = Column(DateTime, nullable=False)
     updated_by_user_id = Column(Integer)
-    animal = relationship("Animal", back_populates="events")
+    animal = relationship("Animal", back_populates="tracked_events")
+    animal_event_type_association = relationship(
+        "AnimalEventTypeAssociation",
+        primaryjoin="and_(Event.event_type == AnimalEventTypeAssociation.event_type,"
+                    " Event.animal_id == AnimalEventTypeAssociation.animal_id)",
+        foreign_keys=[event_type, animal_id],
+        viewonly=True
+    )
     created_by_user = relationship("User", back_populates="events")
     rating = Column(Integer)
     trip_id = Column(Integer, nullable=True)
@@ -70,6 +123,10 @@ class Event(Base):
     @hybrid_property
     def created_by_user_name(self):
         return f"{self.created_by_user.first_name} {self.created_by_user.last_name}"
+
+    @hybrid_property
+    def is_tracked(self):
+        return True if self.animal_event_type_association is not None else False
 
 
 class Note(Base):
