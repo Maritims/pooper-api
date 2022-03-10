@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
+import fastapi
 from fastapi import APIRouter, status, HTTPException, Depends
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, Query
@@ -21,14 +22,14 @@ router = APIRouter(
 
 def get_statement(
         session: Session,
-        animal_id: Optional[int] = None,
+        animal_ids: Optional[List[int]] = None,
         event_type: Optional[EventType] = None,
         days: Optional[int] = None,
         has_trip: Optional[bool] = None) -> Query:
     statement: Query = session.query(Event).filter(Event.animal.has(Animal.is_deactivated.is_not(True)))
 
-    if animal_id is not None and animal_id > 0:
-        statement = statement.where(Event.animal_id == animal_id)
+    if animal_ids is not None and len(animal_ids) > 0:
+        statement = statement.where(Event.animal_id.in_(animal_ids))
 
     if EventType.has_value(event_type):
         statement = statement.where(Event.event_type == event_type)
@@ -49,12 +50,12 @@ def get_statement(
 
 @router.get("/count", response_model=int)
 def get_count(
-        animal_id: Optional[int] = None,
+        animal_ids: Optional[List[int]] = fastapi.Query(None),
         event_type: Optional[EventType] = None,
         days: Optional[int] = None,
         has_trip: Optional[bool] = None,
         session: Session = Depends(get_database_session)):
-    return get_statement(session, animal_id, event_type, days, has_trip).count()
+    return get_statement(session, animal_ids, event_type, days, has_trip).count()
 
 
 @router.get("/{_id}", response_model=EventRead)
@@ -69,7 +70,7 @@ def get_event(_id: int, session: Session = Depends(get_database_session)):
 
 @router.get("/", response_model=List[EventRead])
 def get_all(
-        animal_id: Optional[int] = None,
+        animal_ids: Optional[List[int]] = fastapi.Query(None),
         event_type: Optional[EventType] = None,
         days: Optional[int] = None,
         has_trip: Optional[bool] = None,
@@ -77,7 +78,7 @@ def get_all(
         page_size: int = 100,
         sort_order: str = "desc",
         session: Session = Depends(get_database_session)):
-    statement: Query = get_statement(session, animal_id, event_type, days, has_trip)
+    statement: Query = get_statement(session, animal_ids, event_type, days, has_trip)
 
     if sort_order == "asc":
         statement = statement.order_by(Event.id.asc())

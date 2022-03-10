@@ -4,7 +4,7 @@ from typing import List
 
 from fastapi import APIRouter, status, HTTPException, Depends
 from sqlalchemy import func
-from sqlalchemy.orm import Query
+from sqlalchemy.orm import Query, noload
 from sqlmodel import Session
 
 from ..auth import oauth2_scheme
@@ -33,14 +33,17 @@ def get_count(session: Session = Depends(get_database_session)):
 @router.get("/", response_model=List[AnimalRead])
 def get_all(
         include_deactivated: bool = False,
+        include_events: bool = False,
+        include_conditions: bool = False,
         page: int = 0,
         page_size: int = 100,
         session: Session = Depends(get_database_session)
 ):
     statement: Query = session.query(Animal)
 
-    if include_deactivated is False:
-        statement = statement.where(Animal.is_deactivated.is_not(True))
+    statement = statement if include_deactivated is True else statement.where(Animal.is_deactivated.is_not(True))
+    statement = statement if include_events is True else statement.options(noload('tracked_events'))
+    statement = statement if include_conditions is True else statement.options(noload('tracked_conditions'))
 
     return statement.offset(page).limit(page_size).all()
 
