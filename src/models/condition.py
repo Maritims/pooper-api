@@ -6,6 +6,7 @@ from src.models.condition_type import ConditionType
 
 
 class ConditionBase(BaseModel):
+    animal_id: int
     condition_type: ConditionType
     is_enabled: bool
 
