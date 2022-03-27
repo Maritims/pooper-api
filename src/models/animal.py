@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 from .animal_condition_type_association import AnimalConditionTypeAssociationRead
 from .animal_event_type_association import AnimalEventTypeAssociationRead
+from .animal_weight import AnimalWeightRead
 from .condition import ConditionRead
 from .condition_type import ConditionType
 from .event import EventRead
@@ -30,6 +31,7 @@ class AnimalRead(AnimalBase):
     notes: List[NoteRead]
     tracked_condition_types: List[AnimalConditionTypeAssociationRead]
     tracked_event_types: List[AnimalEventTypeAssociationRead]
+    weight_history: List[AnimalWeightRead]
 
     class Config:
         orm_mode = True

@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session
 
 
 @mock.patch.dict(os.environ, {
-    "API_BASE_URL": "mock api base url",
     "CLIENT_BASE_URL": "mock client base url",
     "API_SECRET_AUTH_KEY": "mock api secret auth key",
     "SENDER_EMAIL_ADDRESS": "mock sender email address",

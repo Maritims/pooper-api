@@ -15,7 +15,6 @@ class SettingsManager:
 
     def __init__(self):
         keys = [
-            'API_BASE_URL',
             'CLIENT_BASE_URL',
             'API_SECRET_AUTH_KEY',
             'SENDER_EMAIL_ADDRESS',

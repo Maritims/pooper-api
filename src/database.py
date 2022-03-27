@@ -31,15 +31,12 @@ class BaseMixin(object):
     updated_by_user_id = Column(Integer, nullable=False)
 
 
-class Animal(Base):
+class Animal(BaseMixin, Base):
     __tablename__ = 'animal'
 
-    id = Column(Integer, primary_key=True)
     name = Column(String(256), nullable=False)
-    created = Column(DateTime, nullable=False)
-    created_by_user_id = Column(Integer, nullable=False)
-    updated = Column(DateTime, nullable=False)
-    updated_by_user_id = Column(DateTime, nullable=False)
+    is_deactivated = Column(Boolean, nullable=False)
+
     tracked_conditions = relationship(
         "Condition",
         primaryjoin="and_(Animal.id == Condition.animal_id,"
@@ -56,7 +53,7 @@ class Animal(Base):
     notes = relationship("Note", back_populates="animal", order_by="desc(Note.created)")
     tracked_condition_types = relationship("AnimalConditionTypeAssociation")
     tracked_event_types = relationship("AnimalEventTypeAssociation")
-    is_deactivated = Column(Boolean, nullable=False)
+    weight_history = relationship("AnimalWeight", lazy="noload")
 
 
 class AnimalEventTypeAssociation(Base):
@@ -81,6 +78,11 @@ class AnimalConditionTypeAssociation(Base):
     created_by_user_id = Column(Integer, ForeignKey('user.id'))
     updated = Column(DateTime, nullable=False)
     updated_by_user_id = Column(Integer, ForeignKey('user.id'))
+
+
+class AnimalWeight(BaseMixin, Base):
+    animal_id = Column(Integer, ForeignKey('animal.id', ondelete='cascade'))
+    weight_in_grams = Column(Float, nullable=False)
 
 
 class Condition(BaseMixin, Base):
