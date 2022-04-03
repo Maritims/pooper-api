@@ -15,7 +15,7 @@ log = getLogger(__name__)
 
 app = FastAPI(
     title="Pooper API",
-    version="0.1.0",
+    version="1.0.1",
     contact={
         "name": "Martin Severin Steffensen",
         "url": "https://github.com/Maritims",
