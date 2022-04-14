@@ -1,8 +1,9 @@
 from datetime import datetime
 import logging
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, status, HTTPException, Depends
+import fastapi
 from sqlalchemy import func
 from sqlalchemy.orm import Query, noload
 from sqlmodel import Session
@@ -49,6 +50,30 @@ def get_all_animals(
     statement = statement.join(AnimalWeight) if include_weight_history is True else statement
 
     return statement.offset(page).limit(page_size).all()
+
+
+@router.get("/weight", response_model=List[AnimalWeightRead])
+def get_animal_weight_history(
+        animal_ids: Optional[List[int]] = fastapi.Query(None),
+        days: Optional[int] = None,
+        session: Session = Depends(get_database_session)
+):
+    statement: Query = session.query(AnimalWeight)
+
+    if animal_ids is not None and len(animal_ids) > 0:
+        statement = statement.where(AnimalWeight.animal_id.in_(animal_ids))
+
+    if days is not None:
+        if days == 1:
+            statement = statement.where(func.date(AnimalWeight.created) == func.date(datetime.now()))
+        else:
+            statement = statement.where(func.datediff(datetime.now(), AnimalWeight.created) <= days)
+
+    db_animal_weight_history = statement\
+        .order_by(AnimalWeight.id.desc())\
+        .all()
+
+    return db_animal_weight_history
 
 
 @router.get("/{_id}", response_model=AnimalRead)
@@ -126,7 +151,7 @@ def update_animal(
     db_animal.updated_by_user_id = user.id
 
     # Removed all tracked condition types
-    session.query(AnimalConditionTypeAssociation).where(AnimalConditionTypeAssociation.animal_id == _id).delete_note()
+    session.query(AnimalConditionTypeAssociation).where(AnimalConditionTypeAssociation.animal_id == _id).delete()
 
     # Add condition types to track
     for condition_type in animal.condition_types_to_track:
@@ -145,7 +170,7 @@ def update_animal(
             ))
 
     # Removed all tracked event types
-    session.query(AnimalEventTypeAssociation).where(AnimalEventTypeAssociation.animal_id == _id).delete_note()
+    session.query(AnimalEventTypeAssociation).where(AnimalEventTypeAssociation.animal_id == _id).delete()
 
     # Add event types to track
     for event_type in animal.event_types_to_track:
@@ -294,23 +319,6 @@ def get_current_animal_weight(_id: int, session: Session = Depends(get_database_
         .first()
 
     return db_current_animal_weight
-
-
-@router.get("/weight/{_id}/history", response_model=List[AnimalWeightRead])
-def get_animal_weight_history(
-        _id: int,
-        page: int = 0,
-        page_size: int = 100,
-        session: Session = Depends(get_database_session)
-):
-    db_animal_weight_history = session.query(AnimalWeight)\
-        .where(AnimalWeight.animal_id == _id)\
-        .order_by(AnimalWeight.id.desc())\
-        .offset(page)\
-        .limit(page_size)\
-        .all()
-
-    return db_animal_weight_history
 
 
 @router.post("/weight", response_model=AnimalWeightRead, status_code=status.HTTP_201_CREATED)
