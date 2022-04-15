@@ -1,9 +1,11 @@
 from datetime import datetime
 from logging import getLogger
+from fastapi import Body, Depends, Request
 
 from sqlalchemy import Boolean, create_engine, Column, DateTime, Float, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker, declared_attr
+from sqlmodel import Session
 
 from .auth import pwd_context
 from .settings_manager import settingsManager
@@ -11,12 +13,6 @@ from .settings_manager import settingsManager
 Base = declarative_base()
 
 log = getLogger(__name__)
-engine = create_engine(f"mariadb+mariadbconnector://"
-                       f"{settingsManager.get_setting('MARIADB_USER')}:"
-                       f"{settingsManager.get_setting('MARIADB_PASSWORD')}@"
-                       f"{settingsManager.get_setting('MARIADB_SERVER')}/"
-                       f"{settingsManager.get_setting('MARIADB_DATABASE')}")
-SessionLocal = sessionmaker(bind=engine)
 
 
 class BaseMixin(object):
@@ -214,22 +210,54 @@ class User(Base):
     color_theme = Column(String(256), nullable=True)
 
 
-def create_db_and_tables():
-    Base.metadata.create_all(engine)
+def get_database_engine(database: str):
+    return create_engine(f"mariadb+mariadbconnector://"
+        f"{settingsManager.get_setting('MARIADB_USER')}:"
+        f"{settingsManager.get_setting('MARIADB_PASSWORD')}@"
+        f"{settingsManager.get_setting('MARIADB_SERVER')}/"
+        f"{database}")
 
 
-def get_database_session():
-    session = SessionLocal()
+def get_database_session_maker(database: str):
+    engine = get_database_engine(database)
+    sessionMaker = sessionmaker(bind = engine)
+    return sessionMaker
+
+
+def get_database_session(request: Request) -> Session:
+    database = 'pooper'
+    
+    # Get db from hostname.
+    if request.base_url.hostname.find('.') != -1:
+        database = request.base_url.hostname.split('.')[0]
+
+    # Get db from headers.
+    if 'HTTP_X_DATABASE' in request.headers:
+        database = request.headers['HTTP_X_DATABASE']
+
+    # Ensure database and tables are created and seeded with users now that we know the database name.
+    create_db_and_tables(database)
+    seed_users(database)
+
+    session_maker = get_database_session_maker(database)
+    session = session_maker()
+
     try:
         yield session
     finally:
         session.close()
 
 
-def seed_users():
+def create_db_and_tables(database: str):
+    engine = get_database_engine(database)
+    Base.metadata.create_all(engine)
+
+
+def seed_users(database: str):
     log.info("Seeding users")
     email_address = "admin@pooper.online"
-    session = SessionLocal()
+    session_maker = get_database_session_maker(database)
+    session = session_maker()
 
     user = session.query(User).where(User.email_address == email_address).first()
     if user is not None:

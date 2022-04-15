@@ -39,8 +39,3 @@ app.include_router(notifications.router)
 app.include_router(trips.router)
 app.include_router(users.router)
 
-
-@app.on_event("startup")
-def on_startup():
-    create_db_and_tables()
-    seed_users()
