@@ -6,10 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .logging_config import logging_config
-from .database import create_db_and_tables, seed_users
 from .routers import animals, auth, events, users, notifications, trips, conditions
 from .settings_manager import settingsManager
-from .services.tenants import get_tenant, get_tenants, is_valid_tenant
+from .services.tenants import get_tenant, is_valid_tenant
 
 logging.config.dictConfig(logging_config)
 log = getLogger(__name__)
