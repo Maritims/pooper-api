@@ -1,13 +1,15 @@
 import logging.config
 from logging import getLogger
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from .logging_config import logging_config
 from .database import create_db_and_tables, seed_users
 from .routers import animals, auth, events, users, notifications, trips, conditions
 from .settings_manager import settingsManager
+from .services.tenants import get_tenant, get_tenants, is_valid_tenant
 
 logging.config.dictConfig(logging_config)
 log = getLogger(__name__)
@@ -39,3 +41,12 @@ app.include_router(notifications.router)
 app.include_router(trips.router)
 app.include_router(users.router)
 
+
+@app.middleware("http")
+async def verify_tenant(request: Request, call_next):
+    tenant = get_tenant(request)
+    if is_valid_tenant(tenant) is True:
+        response = await call_next(request)
+    else:
+        response = JSONResponse(status_code=401, content={'reason': 'Invalid tenant'})
+    return response

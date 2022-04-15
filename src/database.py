@@ -1,6 +1,7 @@
 from datetime import datetime
 from logging import getLogger
-from fastapi import Body, Depends, Request
+from typing import List
+from fastapi import Request
 
 from sqlalchemy import Boolean, create_engine, Column, DateTime, Float, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -9,6 +10,7 @@ from sqlmodel import Session
 
 from .auth import pwd_context
 from .settings_manager import settingsManager
+from .services.tenants import get_tenant
 
 Base = declarative_base()
 
@@ -225,15 +227,7 @@ def get_database_session_maker(database: str):
 
 
 def get_database_session(request: Request) -> Session:
-    database = 'pooper'
-    
-    # Get db from hostname.
-    if request.base_url.hostname.find('.') != -1:
-        database = request.base_url.hostname.split('.')[0]
-
-    # Get db from headers.
-    if 'HTTP_X_DATABASE' in request.headers:
-        database = request.headers['HTTP_X_DATABASE']
+    database = get_tenant(request)
 
     # Ensure database and tables are created and seeded with users now that we know the database name.
     create_db_and_tables(database)
